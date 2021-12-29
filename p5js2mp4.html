@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Document</title>
+     <script src="https://unpkg.com/h264-mp4-encoder/embuild/dist/h264-mp4-encoder.web.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+</head>
+
+<body>
+     <script>
+          const ancho_inicial = 640
+          const alto_inicial = 360
+          
+          let botón_de_grabación
+          let encoder
+          let recording = false
+
+          function preload() {
+               HME.createH264MP4Encoder().then(enc => {
+                    encoder = enc
+                    encoder.outputFilename = (random() + "").replace("0.", "jeffAporta")
+                    encoder.width = ancho_inicial
+                    encoder.height = alto_inicial
+                    encoder.frameRate = 60
+                    encoder.kbps = 50000
+                    encoder.groupOfPictures = 10
+                    encoder.initialize()
+               })
+          }
+
+          function setup() {
+               createCanvas(ancho_inicial, alto_inicial)
+
+               botón_de_grabación = createButton('Grabar')
+               botón_de_grabación.mousePressed(() => {
+                    recording = botón_de_grabación.html() == "Grabar"
+                    if (recording) {
+                         botón_de_grabación.html("Detener")
+                    } else {
+                         botón_de_grabación.html("Grabar")
+                         finalizarGrabación()
+                    }
+
+               })
+
+               textSize(128)
+               textAlign(CENTER, CENTER)
+               pixelDensity(1)
+               smooth()
+          }
+
+          function draw() {
+               background(220)
+               text(frameCount, width / 2, height / 2)
+               grabarFotograma()
+          }
+
+          function grabarFotograma() {
+               if (recording) {
+                    encoder.addFrameRgba(drawingContext.getImageData(0, 0, encoder.width, encoder.height).data);
+               }
+          }
+
+          function finalizarGrabación() {
+               recording = false
+               console.log('recording stopped')
+
+               encoder.finalize()
+               const uint8Array = encoder.FS.readFile(encoder.outputFilename);
+               const anchor = document.createElement('a')
+               anchor.href = URL.createObjectURL(new Blob([uint8Array], { type: 'video/mp4' }))
+               anchor.download = encoder.outputFilename
+               anchor.click()
+               encoder.delete()
+
+               preload()
+          }
+     </script>
+</body>
+
+</html>
